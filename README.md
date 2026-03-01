@@ -2,9 +2,9 @@
 
 **KLine Kronos Suite** 是一套端到端、全链路的 A 股（及全市场）高频金融时序数据处理与特征提纯矩阵。专为 **Kronos (by shiyu-coder)** 等大语言/序列模型量身打造的“数据源泉”。本套件将原始的分钟级金融数据，完美转化为适用于 Kronos 时序预测模型的标准格式。
 
-整个 Suite 包含三大核心微型基站，遵循严格的 **"Flat Dark Gold (极客暗金)"** 设计美学和极客交互理念：
+整个 Suite 包含五大核心微型基站，遵循严格的 **"Flat Dark Gold (极客暗金)"** 设计美学和极客交互理念：
 
-## 🚀 The Trifecta (核心三剑客)
+## 🚀 The Quintet (核心五星矩阵)
 
 本项目采用子模块 (Git Submodules) 的形式聚合。点击下方各个独立工程查看具体源码与说明：
 
@@ -20,8 +20,18 @@
 
 ### 3. [3-KLine-Slicer](https://github.com/Ziqi/3-KLine-Slicer)
 - **职能**: 模型喂养压榨机。
-- **机制**: 对接预训练专家的 `scaler_*.pkl` 均值/方差加密归一化文件，对数据进行批量的健康体检、清洗缺口，最后切割压铸成多维度的 `.npy` 张量。
-- **阶段**: `5m .csv + Scalers -> .npy Tensors`
+- **机制**: 对 K 线数据进行批量的健康体检，清理断点，并将选定的股票组融合、压铸成符合 Kronos 规范的时序特征字典大包 (`.pkl`)。
+- **阶段**: `5m .csv -> .pkl Dataset`
+
+### 4. [4-Kronos-Trainer-GUI](https://github.com/Ziqi/4-Kronos-Trainer-GUI)
+- **职能**: 脑机训练器 (引擎控制台)。
+- **机制**: 图形化封装了 PyTorch 训练链路（包含 Tokenizer 与 Predictor 两阶段）。配置了早期停止 (Early Stopping)、余弦退火 (Cosine Annealing) 等高级特性，利用本地隔离虚拟环境进行深度炼丹。
+- **阶段**: `.pkl Dataset -> Finetuned Models`
+
+### 5. [5-Kronos-Predictor-GUI](https://github.com/Ziqi/5-Kronos-Predictor-GUI)
+- **职能**: 核心脑机推演终端 (Inference Demo)。
+- **机制**: 挂载微调好的 Tokenizer 和 Predictor 脑区，读取最新的 5 分钟真实数据，执行特征缩放 (Transform) 与自回归推演，最后降维解算 (Inverse) 吐出未来包含真实价格的预测游走路线。
+- **阶段**: `5m .csv + Models -> Future .csv`
 
 ---
 
