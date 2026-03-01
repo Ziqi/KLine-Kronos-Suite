@@ -1,6 +1,6 @@
-# KLine Matrix Suite 💻📈
+# KLine Kronos Suite 💻📈
 
-**KLine Matrix Suite** 是一套端到端、全链路的 A 股（及全市场）高频金融时序数据处理与特征提纯矩阵。专为类似于 **Kronos (Temporal X-Matrix) 等大语言/序列模型** 量身打造的“数据源泉”。
+**KLine Kronos Suite** 是一套端到端、全链路的 A 股（及全市场）高频金融时序数据处理与特征提纯矩阵。专为 **Kronos (Chronos by Amazon)** 等大语言/序列模型量身打造的“数据源泉”。本套件将原始的分钟级金融数据，完美转化为适用于 Kronos 时序预测模型的标准格式。
 
 整个 Suite 包含三大核心微型基站，遵循严格的 **"Flat Dark Gold (极客暗金)"** 设计美学和极客交互理念：
 
@@ -30,7 +30,7 @@
 因为本仓库是一个“组装体 (Umbrella Repo)”，克隆时必须携带子模块更新参数：
 
 ```bash
-git clone --recursive https://github.com/Ziqi/KLine-Matrix-Suite.git
+git clone --recursive https://github.com/Ziqi/KLine-Kronos-Suite.git
 ```
 或者在克隆后初始化它们：
 ```bash
@@ -39,7 +39,11 @@ git submodule update
 ```
 
 ## 🌌 为什么这样设计？
-将三者独立解耦的初衷在于**流水线复用与风险隔离**。抓取层、计算层和张量层应该有各自的演进周期。任何一个模块的崩溃，都不会影响到已沉淀下来的物理数据缓存块。所有组件通过统一的 `KLine-Matrix-Suite` 进行聚合管理。
+将三者独立解耦的初衷在于**流水线复用与风险隔离**。抓取层、计算层和张量层应该有各自的演进周期。任何一个模块的崩溃，都不会影响到已沉淀下来的物理数据缓存块。所有组件通过统一的 `KLine-Kronos-Suite` 进行聚合管理。
+
+## Acknowledgements (特别鸣谢)
+本数据处理矩阵由衷感谢并致敬 **Chronos (by Amazon Science)** 团队的开源贡献！
+如果想深入了解支撑和启发本项目背后的时间序列预测模型，敬请关注官方开源项目： [@amazon-science/chronos-forecasting](https://github.com/amazon-science/chronos-forecasting).
 
 ---
 `Design Language: Cyber-Gold` | `Architecture: Micro-Station Git Submodules`
