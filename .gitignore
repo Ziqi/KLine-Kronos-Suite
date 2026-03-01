@@ -1,0 +1,4 @@
+.DS_Store
+*.log
+fetch_log.txt
+resample_log.txt
