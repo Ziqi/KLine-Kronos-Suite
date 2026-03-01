@@ -1,9 +1,9 @@
 [submodule "1-KLine-Extract"]
 	path = 1-KLine-Extract
-	url = https://github.com/Ziqi/KLine-Matrix-Station.git
+	url = https://github.com/Ziqi/1-KLine-Extract.git
 [submodule "2-KLine-Resample"]
 	path = 2-KLine-Resample
-	url = https://github.com/Ziqi/KLine-Resample-Studio.git
+	url = https://github.com/Ziqi/2-KLine-Resample.git
 [submodule "3-KLine-Slicer"]
 	path = 3-KLine-Slicer
-	url = https://github.com/Ziqi/KLine-Slicer.git
+	url = https://github.com/Ziqi/3-KLine-Slicer.git
