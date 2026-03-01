@@ -10,3 +10,6 @@
 [submodule "4-Kronos-Trainer-GUI"]
 	path = 4-Kronos-Trainer-GUI
 	url = https://github.com/YourUsername/4-Kronos-Trainer-GUI.git
+[submodule "5-Kronos-Predictor-GUI"]
+	path = 5-Kronos-Predictor-GUI
+	url = https://github.com/YourUsername/5-Kronos-Predictor-GUI.git
