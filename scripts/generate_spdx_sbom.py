@@ -85,7 +85,7 @@ def generate_sbom(version: str, output_path: pathlib.Path) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--version", default="v1.0.0")
+    ap.add_argument("--version", default="v1.1.0")
     ap.add_argument("--output", type=pathlib.Path, required=True)
     args = ap.parse_args()
     generate_sbom(args.version, args.output)

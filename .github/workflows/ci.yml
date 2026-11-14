@@ -39,8 +39,10 @@ jobs:
       - name: Run 2,000-iteration OHLCV, Z-score & trading-calendar fuzz suite
         run: python3 ./tests/fuzz_kline_pipeline.py --iterations 2000
 
-      - name: Run CLI end-to-end smoke test & deterministic SPDX-2.3 SBOM check
+      - name: Run CLI end-to-end smoke test, reproducible archive check & deterministic SPDX-2.3 SBOM
         run: |
+          python3 -m kline_kronos demo
           python3 -m kline_kronos resample ./examples/sample_1m_ohlcv.csv --out-dir /tmp/kline_ci_5m
           python3 -m kline_kronos audit /tmp/kline_ci_5m/sample_5m_ohlcv.csv --min-rows 2
+          python3 ./scripts/repro_archive.py --verify
           python3 ./scripts/generate_spdx_sbom.py --version ci-check --output /tmp/kline-kronos-suite.spdx.json

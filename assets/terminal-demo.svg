@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="920" height="440" role="img" aria-label="KLine Kronos Suite v1.1.0 zero-setup terminal demo">
+  <!-- SPDX-FileCopyrightText: 2026 Ziqi and KLine-Kronos-Suite Contributors -->
+  <!-- SPDX-License-Identifier: MIT -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13.0px; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12.5px; fill: #8b949e; font-weight: 600; }
+      .prompt { fill: #58a6ff; font-weight: 700; }
+      .cmd { fill: #f0f6fc; }
+      .comment { fill: #8b949e; }
+      .pass { fill: #3fb950; font-weight: 700; }
+      .key { fill: #79c0ff; }
+      .val { fill: #a5d6ff; }
+      .gold { fill: #e3b341; font-weight: 600; }
+
+      .s1 { opacity: 0; animation: show1 15s infinite; }
+      .s2 { opacity: 0; animation: show2 15s infinite; }
+      .s3 { opacity: 0; animation: show3 15s infinite; }
+      .s4 { opacity: 0; animation: show4 15s infinite; }
+
+      @keyframes show1 { 0%, 2% { opacity: 0; } 5%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+      @keyframes show2 { 0%, 14% { opacity: 0; } 18%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+      @keyframes show3 { 0%, 50% { opacity: 0; } 54%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+      @keyframes show4 { 0%, 64% { opacity: 0; } 68%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="920" height="440" rx="10" fill="url(#bgGrad)" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="0" y="0" width="920" height="36" rx="10" fill="#161b22"/>
+  <line x1="0" y1="36" x2="920" y2="36" stroke="#30363d" stroke-width="1"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="18" r="6" fill="#27c93f"/>
+  <text x="460" y="22" text-anchor="middle" class="title">kline-kronos-suite v1.1.0 — Zero-Setup OHLCV Cleaning, Right-Closed 5m &amp; Calendar Demo</text>
+
+  <g class="s1">
+    <text x="24" y="68" class="mono"><tspan class="prompt">$</tspan> <tspan class="cmd">uvx --from git+https://github.com/Ziqi/KLine-Kronos-Suite kline-kronos demo</tspan></text>
+  </g>
+  <g class="s2">
+    <text x="24" y="94" class="mono"><tspan class="cmd">{</tspan> <tspan class="key">"status"</tspan><tspan class="cmd">:</tspan> <tspan class="pass">"ok"</tspan><tspan class="cmd">,</tspan> <tspan class="key">"version"</tspan><tspan class="cmd">:</tspan> <tspan class="val">"1.1.0"</tspan><tspan class="cmd">,</tspan> <tspan class="key">"mode"</tspan><tspan class="cmd">:</tspan> <tspan class="val">"zero-setup-stdlib-demo"</tspan><tspan class="cmd">,</tspan></text>
+    <text x="24" y="118" class="mono">  <tspan class="key">"raw_1m_rows"</tspan><tspan class="cmd">:</tspan> <tspan class="val">20</tspan><tspan class="cmd">,</tspan> <tspan class="key">"cleaned_1m_rows"</tspan><tspan class="cmd">:</tspan> <tspan class="val">19</tspan><tspan class="cmd">,</tspan> <tspan class="key">"synthesized_1500_close"</tspan><tspan class="cmd">:</tspan> <tspan class="gold">"2026-01-05 15:00:00"</tspan><tspan class="cmd">,</tspan></text>
+    <text x="24" y="142" class="mono">  <tspan class="key">"first_5m_label"</tspan><tspan class="cmd">:</tspan> <tspan class="val">"2026-01-05 09:35:00"</tspan><tspan class="cmd">,</tspan> <tspan class="key">"right_closed_5m_bars"</tspan><tspan class="cmd">:</tspan> <tspan class="val">5</tspan><tspan class="cmd">,</tspan></text>
+    <text x="24" y="166" class="mono">  <tspan class="key">"lunch_break_step"</tspan><tspan class="cmd">:</tspan> <tspan class="gold">"2026-01-05 11:30:00 -&gt; 2026-01-05 13:05:00"</tspan><tspan class="cmd">,</tspan></text>
+    <text x="24" y="190" class="mono">  <tspan class="key">"audit_verdict"</tspan><tspan class="cmd">:</tspan> <tspan class="pass">"OK"</tspan><tspan class="cmd">,</tspan> <tspan class="key">"zscore_roundtrip_close"</tspan><tspan class="cmd">:</tspan> <tspan class="val">10.55</tspan> <tspan class="cmd">}</tspan></text>
+  </g>
+
+  <g class="s3">
+    <text x="24" y="238" class="mono"><tspan class="prompt">$</tspan> <tspan class="cmd">python3 tests/test_pipeline_core.py &amp;&amp; python3 tests/fuzz_kline_pipeline.py &amp;&amp; python3 scripts/repro_archive.py --verify</tspan></text>
+  </g>
+  <g class="s4">
+    <text x="24" y="268" class="mono"><tspan class="pass">[PASS] [COVERAGE-GATE]</tspan> <tspan class="cmd">kline_kronos core statement coverage 91.15% (gate &gt;= 85.0%, 0 AST violations).</tspan></text>
+    <text x="24" y="294" class="mono"><tspan class="pass">[PASS] [FUZZ-HARNESS]</tspan> <tspan class="cmd">Completed 2000 fuzz iterations + 5 edge cases (0 crashes, all invariants held).</tspan></text>
+    <text x="24" y="320" class="mono"><tspan class="pass">[PASS] [REPRODUCIBLE-BUILD]</tspan> <tspan class="cmd">Bit-for-bit deterministic PAX archive verified (mtime=0, uid/gid=0).</tspan></text>
+    <text x="24" y="356" class="mono"><tspan class="prompt">$</tspan> <tspan class="cmd">brew install Ziqi/tap/kline-kronos-suite &amp;&amp; kline-kronos --version</tspan></text>
+    <text x="24" y="382" class="mono gold">kline-kronos 1.1.0</text>
+    <text x="24" y="414" class="mono comment"># OpenSSF Best Practices Silver (#16679)  |  Scorecard 8.2/10  |  SLSA Build Level 3  |  Zero Core Deps</text>
+  </g>
+</svg>

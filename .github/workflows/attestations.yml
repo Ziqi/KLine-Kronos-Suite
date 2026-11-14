@@ -32,7 +32,7 @@ jobs:
       - name: Build deterministic release archive & SPDX-2.3 SBOM
         run: |
           mkdir -p ./artifacts
-          git archive --format=tar.gz --prefix=kline-kronos-suite/ HEAD > ./artifacts/kline-kronos-suite-bundle.tar.gz
+          python3 ./scripts/repro_archive.py --output ./artifacts/kline-kronos-suite-bundle.tar.gz --verify
           python3 ./scripts/generate_spdx_sbom.py --version "${GITHUB_REF_NAME:-main}" --output ./artifacts/kline-kronos-suite.spdx.json
           sha256sum ./artifacts/kline-kronos-suite-bundle.tar.gz ./artifacts/kline-kronos-suite.spdx.json
 

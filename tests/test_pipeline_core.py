@@ -38,6 +38,7 @@ from kline_kronos.pipeline import (  # noqa: E402
 
 class KLineKronosPipelineTests(unittest.TestCase):
     def test_sample_csv_end_to_end_cli(self) -> None:
+        self.assertEqual(cli_main(["demo"]), 0)
         sample_csv = REPO_ROOT / "examples" / "sample_1m_ohlcv.csv"
         self.assertTrue(sample_csv.is_file())
         with tempfile.TemporaryDirectory() as td:
@@ -75,6 +76,7 @@ class KLineKronosPipelineTests(unittest.TestCase):
         self.assertEqual(cleaned[-1].timestamp, dt.datetime(2026, 1, 5, 15, 0, 0))
         self.assertEqual(cleaned[-1].close, 10.4)
         self.assertEqual(cleaned[-1].volume, 0.0)
+        self.assertEqual(cleaned[-1].amount, 0.0)
 
     def test_resample_right_closed_and_window_bounds(self) -> None:
         self.assertEqual(resample_1m_to_5m_records([]), [])

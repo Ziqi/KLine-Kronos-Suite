@@ -146,7 +146,7 @@ def clean_1m_records(records: Iterable[BarRecord]) -> list[BarRecord]:
                 low=last.close,
                 close=last.close,
                 volume=0.0,
-                amount=last.amount,
+                amount=0.0,
             )
 
     return [by_ts[k] for k in sorted(by_ts)]
