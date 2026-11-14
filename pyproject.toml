@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kline-kronos-suite"
-version = "1.0.0"
+version = "1.0.1"
 description = "Deterministic intraday OHLCV cleaning, session-aligned 1m->5m resampling, QA slicing, and desktop/CLI workstation for Kronos financial foundation models."
 readme = "README.md"
 license = {text = "MIT"}
@@ -27,11 +27,11 @@ dependencies = []
 
 [project.optional-dependencies]
 workstation = [
-    "numpy>=1.24",
-    "pandas>=2.0",
-    "requests>=2.31",
-    "ttkbootstrap>=1.10",
-    "torch>=2.0",
+    "numpy>=2.5.4",
+    "pandas>=3.1.1",
+    "requests>=2.34.2",
+    "ttkbootstrap>=2.2.7",
+    "torch>=2.15.0",
 ]
 
 [project.scripts]

@@ -1,5 +1,6 @@
-# KLine Kronos Suite (`v1.0.0`)
+# KLine Kronos Suite (`v1.0.1`)
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16679/badge)](https://www.bestpractices.dev/projects/16679)
 [![CI & Coverage Gate](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml)
 [![CodeQL SAST](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Ziqi/KLine-Kronos-Suite/badge)](https://scorecard.dev/viewer/?uri=github.com/Ziqi/KLine-Kronos-Suite)
