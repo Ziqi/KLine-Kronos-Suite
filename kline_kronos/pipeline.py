@@ -116,29 +116,48 @@ def write_ohlcv_csv(
     return len(records)
 
 
-def clean_1m_records(records: Iterable[BarRecord]) -> list[BarRecord]:
-    """Deduplicate, sort, filter 13:00 / 15:01-15:31 auction noise, and synthesize missing 15:00 close bar."""
+MARKET_SESSIONS: dict[str, tuple[tuple[tuple[int, int], tuple[int, int]], ...]] = {
+    "cn": (((9, 35), (11, 30)), ((13, 5), (15, 0))),
+    "hk": (((9, 35), (12, 0)), ((13, 5), (16, 0))),
+    "us": (((9, 35), (16, 0)),),
+    "crypto": (((0, 0), (23, 55)),),
+}
+
+
+def clean_1m_records(records: Iterable[BarRecord], market: str = "cn") -> list[BarRecord]:
+    """Deduplicate, sort, filter session boundary noise, and synthesize missing session close bar."""
+    if market not in MARKET_SESSIONS:
+        raise ValueError(f"Unsupported market: {market}")
     by_ts: dict[dt.datetime, BarRecord] = {}
     for r in records:
         t = r.timestamp.time()
-        if t == dt.time(13, 0, 0):
-            continue
-        if dt.time(15, 1, 0) <= t <= dt.time(15, 31, 0):
-            continue
+        if market == "cn":
+            if t == dt.time(13, 0, 0) or dt.time(15, 1, 0) <= t <= dt.time(15, 31, 0):
+                continue
+        elif market == "hk":
+            if t == dt.time(13, 0, 0) or dt.time(16, 1, 0) <= t <= dt.time(16, 15, 0):
+                continue
+        elif market == "us":
+            if t < dt.time(9, 30, 0) or t > dt.time(16, 0, 0):
+                continue
         by_ts[r.timestamp] = r
 
     if not by_ts:
         return []
 
     sorted_recs = [by_ts[k] for k in sorted(by_ts)]
+    if market == "crypto":
+        return sorted_recs
+
+    close_time = {"cn": dt.time(15, 0, 0), "hk": dt.time(16, 0, 0), "us": dt.time(16, 0, 0)}[market]
     by_day: dict[dt.date, list[BarRecord]] = {}
     for r in sorted_recs:
         by_day.setdefault(r.timestamp.date(), []).append(r)
 
     for day, day_bars in by_day.items():
-        if not any(b.timestamp.time() == dt.time(15, 0, 0) for b in day_bars):
+        if not any(b.timestamp.time() == close_time for b in day_bars):
             last = day_bars[-1]
-            close_ts = dt.datetime.combine(day, dt.time(15, 0, 0))
+            close_ts = dt.datetime.combine(day, close_time)
             by_ts[close_ts] = BarRecord(
                 timestamp=close_ts,
                 open=last.close,
@@ -311,20 +330,96 @@ def inverse_scale_trajectory(
     return [[round(row[j] * stds[j] + means[j], 3) for j in range(6)] for row in norm_rows]
 
 
-def next_cn_trading_bar_5m(current_time: dt.datetime) -> dt.datetime:
-    """Advance one 5-minute A-share session bar (09:35..11:30, 13:05..15:00, Mon-Fri)."""
+def next_market_trading_bar_5m(current_time: dt.datetime, market: str = "cn") -> dt.datetime:
+    """Advance one right-closed 5-minute session bar across CN, HK, US, or 24/7 Crypto calendars."""
+    if market not in MARKET_SESSIONS:
+        raise ValueError(f"Unsupported market: {market}")
     next_t = current_time.replace(second=0, microsecond=0) + dt.timedelta(minutes=5)
+    if market == "crypto":
+        return next_t
+
+    sessions = MARKET_SESSIONS[market]
+    first_open = sessions[0][0]
+    last_close = sessions[-1][1]
     while True:
         if next_t.weekday() >= 5:
             days_ahead = 7 - next_t.weekday()
-            next_t = (next_t + dt.timedelta(days=days_ahead)).replace(hour=9, minute=35, second=0)
+            next_t = (next_t + dt.timedelta(days=days_ahead)).replace(
+                hour=first_open[0], minute=first_open[1], second=0
+            )
             continue
         hm = (next_t.hour, next_t.minute)
-        if ((9, 35) <= hm <= (11, 30)) or ((13, 5) <= hm <= (15, 0)):
+        if any(seg_start <= hm <= seg_end for seg_start, seg_end in sessions):
             return next_t
-        if (11, 30) < hm <= (13, 0):
-            next_t = next_t.replace(hour=13, minute=5, second=0)
-        elif hm > (15, 0):
-            next_t = (next_t + dt.timedelta(days=1)).replace(hour=9, minute=35, second=0)
+        if len(sessions) == 2 and sessions[0][1] < hm <= (sessions[1][0][0], 0):
+            next_t = next_t.replace(hour=sessions[1][0][0], minute=sessions[1][0][1], second=0)
+        elif hm > last_close:
+            next_t = (next_t + dt.timedelta(days=1)).replace(
+                hour=first_open[0], minute=first_open[1], second=0
+            )
         else:
-            next_t = next_t.replace(hour=9, minute=35, second=0)
+            next_t = next_t.replace(hour=first_open[0], minute=first_open[1], second=0)
+
+
+def next_cn_trading_bar_5m(current_time: dt.datetime) -> dt.datetime:
+    """Advance one 5-minute A-share session bar (09:35..11:30, 13:05..15:00, Mon-Fri)."""
+    return next_market_trading_bar_5m(current_time, market="cn")
+
+
+def audit_lookahead_and_hygiene(
+    records: Sequence[BarRecord], market: str = "cn", max_jump_pct: float = 0.25
+) -> dict[str, object]:
+    """Detect look-ahead timestamp misalignment, off-session leakage bars, and extreme flash spikes."""
+    if market not in MARKET_SESSIONS:
+        raise ValueError(f"Unsupported market: {market}")
+    issues: list[str] = []
+    sessions = MARKET_SESSIONS[market]
+    prev: BarRecord | None = None
+    for r in records:
+        if r.timestamp.minute % 5 != 0 or r.timestamp.second != 0:
+            issues.append(f"MISALIGNED_5M_LABEL:{r.timestamp.isoformat()}")
+        if market != "crypto":
+            hm = (r.timestamp.hour, r.timestamp.minute)
+            if r.timestamp.weekday() >= 5 or not any(s <= hm <= e for s, e in sessions):
+                issues.append(f"OFF_SESSION_LEAKAGE_BAR:{r.timestamp.isoformat()}")
+        if prev is not None:
+            if r.timestamp <= prev.timestamp:
+                issues.append(f"NON_MONOTONIC_LEAK:{r.timestamp.isoformat()}")
+            if prev.close > 0 and abs(r.close - prev.close) / prev.close > max_jump_pct:
+                issues.append(f"EXTREME_RETURN_SPIKE:{r.timestamp.isoformat()}")
+        prev = r
+    return {
+        "passed": len(issues) == 0,
+        "market": market,
+        "rows_checked": len(records),
+        "issue_count": len(issues),
+        "issues": issues[:20],
+    }
+
+
+def export_foundation_windows_jsonl(
+    records: Sequence[BarRecord],
+    output_path: str | pathlib.Path,
+    lookback: int = 16,
+    horizon: int = 4,
+    symbol: str = "SYNTH",
+) -> int:
+    """Export sliding OHLCV context/target windows as universal JSONL (Chronos / TimesFM / HF compatible)."""
+    total = lookback + horizon
+    out_fp = pathlib.Path(output_path)
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+    written = 0
+    with out_fp.open("w", encoding="utf-8") as f:
+        for idx in range(0, max(0, len(records) - total + 1)):
+            ctx = records[idx : idx + lookback]
+            fut = records[idx + lookback : idx + total]
+            item = {
+                "item_id": symbol,
+                "start": ctx[0].timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "context_end": ctx[-1].timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "context_close": [round(b.close, 4) for b in ctx],
+                "target_close": [round(b.close, 4) for b in fut],
+            }
+            f.write(json.dumps(item) + "\n")
+            written += 1
+    return written

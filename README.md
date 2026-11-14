@@ -1,4 +1,4 @@
-# KLine Kronos Suite (`v1.1.0`)
+# KLine Kronos Suite (`v1.2.0`)
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16679/badge)](https://www.bestpractices.dev/projects/16679)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Ziqi/KLine-Kronos-Suite/badge)](https://scorecard.dev/viewer/?uri=github.com/Ziqi/KLine-Kronos-Suite)
@@ -7,9 +7,9 @@
 
 > **English** | **[简体中文 (`README.zh-CN.md`)](./README.zh-CN.md)**
 
-**Deterministic intraday candlestick ("K-line" / OHLCV) cleaning, session-aligned `1m -> 5m` resampling, QA auditing, and fine-tuning/inference workstation for [Kronos](https://github.com/shiyu-coder/Kronos) (an open-source Tokenizer + Predictor financial candlestick foundation model), built with native China A-share (`SSE/SZSE: 09:30–11:30, 13:00–15:00`) session & lunch-break calendar alignment.**
+**Zero-dependency financial candlestick (OHLCV) hygiene engine, look-ahead bias (`leakage-audit`) detector, multi-market (`US Equities` · `24/7 Crypto` · `HKEX` · `China A-Share`) right-closed `1m -> 5m` aggregator, universal JSONL window exporter (`Chronos` / `TimesFM` / [Kronos](https://github.com/shiyu-coder/Kronos)), and native `MCP` server (`kline-kronos mcp`).**
 
-![KLine Kronos Suite v1.1.0 Zero-Setup Terminal Demo](./assets/terminal-demo.svg)
+![KLine Kronos Suite v1.2.0 Zero-Setup Terminal Demo](./assets/terminal-demo.svg)
 
 ---
 
@@ -117,7 +117,7 @@ python3 ./02_resample/gui_resample_5m.py
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
 
 - **Automated Coverage, Fuzzing & AST Security Gate:** `python3 ./tests/test_pipeline_core.py --min-coverage 85 && python3 ./tests/fuzz_kline_pipeline.py --iterations 2000` verifies end-to-end CLI/core behavior, trading-calendar edge cases, `>=85%` `kline_kronos` core CLI/pipeline statement coverage (`91.15%` actual; desktop GUI stages excluded), and AST invariants (zero `os.system`, zero bare `except:`).
-- **Bit-for-Bit Reproducible Builds & SLSA Level 3 Provenance:** Run `python3 ./scripts/repro_archive.py --verify` (or `--verify-file kline-kronos-suite-v1.1.0.tar.gz`) to verify deterministic PAX source archives (`mtime=0`, `uid/gid=0`), attested via Sigstore **SLSA Build Level 3**, offline Ed25519 signatures ([`keys/release-signing-pub.pem`](./keys/release-signing-pub.pem)), and **SPDX-2.3** SBOMs under [`/attestations`](https://github.com/Ziqi/KLine-Kronos-Suite/attestations).
+- **Bit-for-Bit Reproducible Builds & SLSA Level 3 Provenance:** Run `python3 ./scripts/repro_archive.py --verify` (or `--verify-file kline-kronos-suite-v1.2.0.tar.gz`) to verify deterministic PAX source archives (`mtime=0`, `uid/gid=0`), attested via Sigstore **SLSA Build Level 3**, offline Ed25519 signatures ([`keys/release-signing-pub.pem`](./keys/release-signing-pub.pem)), and **SPDX-2.3** SBOMs under [`/attestations`](https://github.com/Ziqi/KLine-Kronos-Suite/attestations).
 - **Security Policy & OSPS Baseline Level 3:** See [`SECURITY.md`](./SECURITY.md) for OpenSSF OSPS Baseline Level 3 compliance, private vulnerability reporting, and `.pkl` checkpoint trust-boundary guidelines.
 
 ## Acknowledgements & License

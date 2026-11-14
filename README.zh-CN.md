@@ -1,4 +1,4 @@
-# KLine Kronos Suite（`v1.1.0` · 金融高频 K 线确定性清洗、右闭合重采样与 Kronos 推演套件）
+# KLine Kronos Suite（`v1.2.0` · 全球多市场高频 K 线防未来函数质检、右闭合重采样与多模型时序套件）
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16679/badge)](https://www.bestpractices.dev/projects/16679)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Ziqi/KLine-Kronos-Suite/badge)](https://scorecard.dev/viewer/?uri=github.com/Ziqi/KLine-Kronos-Suite)
@@ -7,9 +7,9 @@
 
 > **[English (`README.md`)](./README.md)** | **简体中文**
 
-围绕开源金融 K 线基础模型 **[Kronos](https://github.com/shiyu-coder/Kronos)**（Tokenizer + Predictor 双阶段时序模型）打造的端到端 **1 分钟高频行情去噪清洗 → 右闭合 5 分钟重采样 → 数据质检打包 → 双阶段微调监控 → A 股交易日历（`09:30–11:30, 13:00–15:00`）对齐推演画图** 模块化工程套件（同时提供 **零第三方依赖纯标准库 CLI** 与 **`ttkbootstrap` 五阶段桌面工作台**）。
+零第三方依赖金融高频 K 线（OHLCV）清洗引擎、未来函数穿越体检器（`leakage-audit`）、全市场（美股 `US` · 加密货币 `24/7 Crypto` · 港股 `HK` · A股 `CN`）右闭合 `1m -> 5m` 重采样器、多基础模型通用 JSONL 窗口导出器（兼容 `Chronos` / `TimesFM` / **[Kronos](https://github.com/shiyu-coder/Kronos)**）及原生 **`MCP Server`（`kline-kronos mcp`）**。
 
-![KLine Kronos Suite v1.1.0 零配置终端演示](./assets/terminal-demo.svg)
+![KLine Kronos Suite v1.2.0 零配置终端演示](./assets/terminal-demo.svg)
 
 ---
 
@@ -112,5 +112,5 @@ python3 ./02_resample/gui_resample_5m.py
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
 
 - **自动化质量门禁**：执行 `python3 ./tests/test_pipeline_core.py --min-coverage 85 && python3 ./tests/fuzz_kline_pipeline.py --iterations 2000` 验证单元测试、2,000 轮模糊测试、AST 安全扫描以及 `kline_kronos` 核心算法与 CLI 语句覆盖率（实测 `91.15%`，不含桌面 GUI 模块）。
-- **逐比特可重现归档与 SLSA Level 3 溯源**：执行 `python3 ./scripts/repro_archive.py --verify`（或 `--verify-file kline-kronos-suite-v1.1.0.tar.gz`）验证确定性 PAX 归档（`mtime=0, uid/gid=0`），每次发布均附带 Sigstore **SLSA Build Level 3** 证明、离线 Ed25519 签名（公钥见 [`keys/release-signing-pub.pem`](./keys/release-signing-pub.pem)）与 **SPDX-2.3** SBOM（见 [`/attestations`](https://github.com/Ziqi/KLine-Kronos-Suite/attestations) 及 [`SECURITY.md`](./SECURITY.md)）。
+- **逐比特可重现归档与 SLSA Level 3 溯源**：执行 `python3 ./scripts/repro_archive.py --verify`（或 `--verify-file kline-kronos-suite-v1.2.0.tar.gz`）验证确定性 PAX 归档（`mtime=0, uid/gid=0`），每次发布均附带 Sigstore **SLSA Build Level 3** 证明、离线 Ed25519 签名（公钥见 [`keys/release-signing-pub.pem`](./keys/release-signing-pub.pem)）与 **SPDX-2.3** SBOM（见 [`/attestations`](https://github.com/Ziqi/KLine-Kronos-Suite/attestations) 及 [`SECURITY.md`](./SECURITY.md)）。
 - 本项目基于 [MIT License](./LICENSE) 开源，欢迎在 [GitHub Discussions](https://github.com/Ziqi/KLine-Kronos-Suite/discussions) 交流量化数据工程与 Kronos 微调实践。

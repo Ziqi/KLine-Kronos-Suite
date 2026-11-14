@@ -40,7 +40,7 @@ Use **[GitHub Private Vulnerability Reporting](https://github.com/Ziqi/KLine-Kro
 
 ## 6. OpenSSF OSPS Baseline (Level 3) Alignment & Reproducible Builds
 
-`KLine-Kronos-Suite` (`v1.1.0+`) conforms to the **OpenSSF Open Source Project Security (OSPS) Baseline Level 3** controls alongside **EU Cyber Resilience Act (CRA)** open-source steward readiness:
+`KLine-Kronos-Suite` (`v1.2.0+`) conforms to the **OpenSSF Open Source Project Security (OSPS) Baseline Level 3** controls alongside **EU Cyber Resilience Act (CRA)** open-source steward readiness:
 
 | OSPS Domain | Level 3 Control Requirement | Repository Implementation & Evidence |
 | :--- | :--- | :--- |

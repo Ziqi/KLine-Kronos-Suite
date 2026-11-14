@@ -16,17 +16,21 @@ import unittest
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+import io
 import kline_kronos  # noqa: E402
-from kline_kronos.cli import main as cli_main  # noqa: E402
+from kline_kronos.cli import main as cli_main, serve_kline_mcp_stdio  # noqa: E402
 from kline_kronos.desktop_utils import bring_window_frontmost, reveal_in_file_manager  # noqa: E402
 from kline_kronos.pipeline import (  # noqa: E402
     BarRecord,
     audit_5m_records,
     audit_csv_file,
+    audit_lookahead_and_hygiene,
     clean_1m_records,
+    export_foundation_windows_jsonl,
     inverse_scale_trajectory,
     load_ohlcv_csv,
     next_cn_trading_bar_5m,
+    next_market_trading_bar_5m,
     pack_kronos_dataset_meta,
     parse_timestamp,
     prepare_inference_window,
@@ -162,6 +166,88 @@ class KLineKronosPipelineTests(unittest.TestCase):
             next_cn_trading_bar_5m(dt.datetime(2026, 1, 5, 9, 15)),
             dt.datetime(2026, 1, 5, 9, 35),
         )
+        # US, HK, Crypto multi-market calendars & clean/leakage-audit/export-windows/MCP
+        self.assertEqual(
+            next_market_trading_bar_5m(dt.datetime(2026, 1, 5, 16, 0), market="us"),
+            dt.datetime(2026, 1, 6, 9, 35),
+        )
+        self.assertEqual(
+            next_market_trading_bar_5m(dt.datetime(2026, 1, 5, 12, 0), market="hk"),
+            dt.datetime(2026, 1, 5, 13, 5),
+        )
+        self.assertEqual(
+            next_market_trading_bar_5m(dt.datetime(2026, 1, 10, 23, 55), market="crypto"),
+            dt.datetime(2026, 1, 11, 0, 0),
+        )
+        with self.assertRaises(ValueError):
+            next_market_trading_bar_5m(dt.datetime(2026, 1, 5, 9, 35), market="invalid")
+        with self.assertRaises(ValueError):
+            clean_1m_records([], market="invalid")
+        with self.assertRaises(ValueError):
+            audit_lookahead_and_hygiene([], market="invalid")
+
+        us_cleaned = clean_1m_records(
+            [
+                BarRecord(dt.datetime(2026, 1, 5, 9, 15), 100.0, 100.2, 99.9, 100.1, 10, 1000),
+                BarRecord(dt.datetime(2026, 1, 5, 15, 59), 101.0, 101.5, 100.8, 101.2, 50, 5060),
+            ],
+            market="us",
+        )
+        self.assertEqual(us_cleaned[-1].timestamp, dt.datetime(2026, 1, 5, 16, 0))
+        hk_cleaned = clean_1m_records(
+            [
+                BarRecord(dt.datetime(2026, 1, 5, 13, 0), 50.0, 50.0, 50.0, 50.0, 0, 0),
+                BarRecord(dt.datetime(2026, 1, 5, 15, 59), 51.0, 51.2, 50.9, 51.1, 20, 1022),
+            ],
+            market="hk",
+        )
+        self.assertEqual(hk_cleaned[-1].timestamp, dt.datetime(2026, 1, 5, 16, 0))
+        crypto_cleaned = clean_1m_records(
+            [BarRecord(dt.datetime(2026, 1, 10, 23, 59), 90000.0, 90100.0, 89900.0, 90050.0, 5, 450250)],
+            market="crypto",
+        )
+        self.assertEqual(len(crypto_cleaned), 1)
+
+        leaky_bars = [
+            BarRecord(dt.datetime(2026, 1, 5, 9, 32), 10.0, 10.2, 9.9, 10.0, 100, 1000),
+            BarRecord(dt.datetime(2026, 1, 5, 12, 10), 15.0, 15.5, 14.9, 15.0, 100, 1500),
+        ]
+        leak_rep = audit_lookahead_and_hygiene(leaky_bars, market="cn")
+        self.assertFalse(leak_rep["passed"])
+        self.assertGreaterEqual(leak_rep["issue_count"], 2)
+
+        with tempfile.TemporaryDirectory() as td:
+            tdir = pathlib.Path(td)
+            clean_us_csv = tdir / "spy_5m.csv"
+            write_ohlcv_csv(recs, clean_us_csv)
+            self.assertEqual(cli_main(["leakage-audit", str(clean_us_csv), "--market", "us"]), 0)
+            win_jsonl = tdir / "windows.jsonl"
+            self.assertEqual(
+                cli_main(["export-windows", str(clean_us_csv), "--output", str(win_jsonl), "--lookback", "6", "--horizon", "2"]),
+                0,
+            )
+            self.assertEqual(len(win_jsonl.read_text(encoding="utf-8").splitlines()), 5)
+
+            mcp_in = io.BytesIO(
+                b'{"jsonrpc":"2.0","id":1,"method":"initialize"}\n'
+                b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n'
+                b'{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n'
+                + json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": 3,
+                        "method": "tools/call",
+                        "params": {"name": "audit_ohlcv_leakage", "arguments": {"csv_path": str(clean_us_csv), "market": "us"}},
+                    }
+                ).encode("utf-8")
+                + b"\n"
+                + b'{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"step_trading_calendar","arguments":{"timestamp":"2026-01-05 16:00:00","market":"us"}}}\n'
+                + b'{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"bad_tool","arguments":{}}}\n'
+                + b'{"jsonrpc":"2.0","id":6,"method":"bad/method"}\n'
+            )
+            mcp_out = io.BytesIO()
+            self.assertEqual(serve_kline_mcp_stdio(mcp_in, mcp_out), 0)
+            self.assertIn(b"kline-kronos-suite", mcp_out.getvalue())
 
     def test_static_security_invariants_across_all_repo_scripts(self) -> None:
         """Guarantee zero os.system(), zero bare except:, zero deprecated '5T', and valid AST across all scripts."""

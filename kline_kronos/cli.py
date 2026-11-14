@@ -12,13 +12,17 @@ import tempfile
 
 from . import __version__
 from .pipeline import (
+    MARKET_SESSIONS,
     BarRecord,
     audit_5m_records,
     audit_csv_file,
+    audit_lookahead_and_hygiene,
     clean_1m_records,
+    export_foundation_windows_jsonl,
     inverse_scale_trajectory,
     load_ohlcv_csv,
     next_cn_trading_bar_5m,
+    next_market_trading_bar_5m,
     pack_kronos_dataset_meta,
     parse_timestamp,
     prepare_inference_window,
@@ -26,6 +30,87 @@ from .pipeline import (
     resample_csv_to_5m,
     write_ohlcv_csv,
 )
+
+
+MCP_TOOLS = [
+    {
+        "name": "audit_ohlcv_leakage",
+        "description": "Audit a 5-minute OHLCV CSV file for look-ahead timestamp misalignment, off-session leakage bars, and flash spikes across US, Crypto, HK, or CN calendars.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "csv_path": {"type": "string"},
+                "market": {"type": "string", "enum": ["us", "crypto", "hk", "cn"], "default": "us"},
+            },
+            "required": ["csv_path"],
+        },
+    },
+    {
+        "name": "step_trading_calendar",
+        "description": "Advance one right-closed 5-minute bar respecting US, Crypto (24/7), HKEX, or CN session & lunch/weekend boundaries.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "timestamp": {"type": "string"},
+                "market": {"type": "string", "enum": ["us", "crypto", "hk", "cn"], "default": "us"},
+            },
+            "required": ["timestamp"],
+        },
+    },
+]
+
+
+def serve_kline_mcp_stdio(in_stream, out_stream) -> int:
+    while True:
+        line = in_stream.readline()
+        if not line:
+            break
+        stripped = line.strip()
+        if not stripped:
+            continue
+        req = json.loads(stripped.decode("utf-8"))
+        req_id = req.get("id")
+        method = req.get("method", "")
+        if req_id is None or method.startswith("notifications/"):
+            continue
+        if method == "initialize":
+            resp = {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}},
+                    "serverInfo": {"name": "kline-kronos-suite", "version": __version__},
+                },
+            }
+        elif method == "tools/list":
+            resp = {"jsonrpc": "2.0", "id": req_id, "result": {"tools": MCP_TOOLS}}
+        elif method == "tools/call":
+            params = req.get("params") or {}
+            name = params.get("name")
+            t_args = params.get("arguments") or {}
+            if name == "audit_ohlcv_leakage":
+                recs = load_ohlcv_csv(t_args["csv_path"])
+                rep = audit_lookahead_and_hygiene(recs, market=t_args.get("market", "us"))
+                resp = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {"content": [{"type": "text", "text": json.dumps(rep, indent=2)}], "isError": not rep["passed"]},
+                }
+            elif name == "step_trading_calendar":
+                nxt = next_market_trading_bar_5m(parse_timestamp(t_args["timestamp"]), market=t_args.get("market", "us"))
+                resp = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {"content": [{"type": "text", "text": nxt.strftime("%Y-%m-%d %H:%M:%S")}], "isError": False},
+                }
+            else:
+                resp = {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32602, "message": f"Unknown tool: {name}"}}
+        else:
+            resp = {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method not found: {method}"}}
+        out_stream.write(json.dumps(resp).encode("utf-8") + b"\n")
+        out_stream.flush()
+    return 0
 
 
 def _run_zero_setup_demo() -> int:
@@ -88,11 +173,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Run a zero-file, zero-dependency synthetic 1m->5m clean, resample, QA & calendar showcase",
     )
 
-    p_clean = sub.add_parser("clean", help="Clean 1-minute OHLCV CSV and synthesize missing 15:00 session bar")
+    p_clean = sub.add_parser("clean", help="Clean 1-minute OHLCV CSV across CN, US, HK, or Crypto sessions")
     p_clean.add_argument("input_csv", type=pathlib.Path)
     p_clean.add_argument("--output", type=pathlib.Path, required=True)
+    p_clean.add_argument("--market", choices=tuple(MARKET_SESSIONS), default="cn")
 
-    p_res = sub.add_parser("resample", help="Resample 1-minute OHLCV CSV into Kronos 5-minute format")
+    p_res = sub.add_parser("resample", help="Resample 1-minute OHLCV CSV into right-closed 5-minute format")
     p_res.add_argument("input_csv", type=pathlib.Path)
     p_res.add_argument("--out-dir", type=pathlib.Path, required=True)
 
@@ -100,10 +186,22 @@ def main(argv: list[str] | None = None) -> int:
     p_aud.add_argument("input_csv", type=pathlib.Path)
     p_aud.add_argument("--min-rows", type=int, default=5)
 
+    p_leak = sub.add_parser("leakage-audit", help="Audit 5-minute CSV for look-ahead bias, off-session bars, and spikes")
+    p_leak.add_argument("input_csv", type=pathlib.Path)
+    p_leak.add_argument("--market", choices=tuple(MARKET_SESSIONS), default="us")
+
+    p_exp = sub.add_parser("export-windows", help="Export universal JSONL sliding windows (Chronos / TimesFM / HF)")
+    p_exp.add_argument("input_csv", type=pathlib.Path)
+    p_exp.add_argument("--output", type=pathlib.Path, required=True)
+    p_exp.add_argument("--lookback", type=int, default=16)
+    p_exp.add_argument("--horizon", type=int, default=4)
+
     p_pack = sub.add_parser("manifest", help="Build SHA-256 dataset manifest from 5-minute CSV directory")
     p_pack.add_argument("input_dir", type=pathlib.Path)
     p_pack.add_argument("--output", type=pathlib.Path, required=True)
     p_pack.add_argument("--min-rows", type=int, default=5)
+
+    sub.add_parser("mcp", help="Run zero-dependency MCP JSON-RPC 2.0 server over stdio")
 
     args = parser.parse_args(argv)
 
@@ -112,9 +210,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "clean":
         raw = load_ohlcv_csv(args.input_csv)
-        cleaned = clean_1m_records(raw)
+        cleaned = clean_1m_records(raw, market=args.market)
         n = write_ohlcv_csv(cleaned, args.output, ts_col="dt")
-        print(json.dumps({"status": "ok", "input_rows": len(raw), "cleaned_rows": n, "output": str(args.output)}))
+        print(json.dumps({"status": "ok", "market": args.market, "input_rows": len(raw), "cleaned_rows": n, "output": str(args.output)}))
         return 0
 
     if args.cmd == "resample":
@@ -130,11 +228,26 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "ok" if ok else "fail", "verdict": verdict, "file": args.input_csv.name}))
         return 0 if ok else 1
 
+    if args.cmd == "leakage-audit":
+        recs = load_ohlcv_csv(args.input_csv)
+        rep = audit_lookahead_and_hygiene(recs, market=args.market)
+        print(json.dumps(rep))
+        return 0 if rep["passed"] else 1
+
+    if args.cmd == "export-windows":
+        recs = load_ohlcv_csv(args.input_csv)
+        cnt = export_foundation_windows_jsonl(recs, args.output, lookback=args.lookback, horizon=args.horizon, symbol=args.input_csv.stem)
+        print(json.dumps({"status": "ok", "windows": cnt, "output": str(args.output)}))
+        return 0
+
     if args.cmd == "manifest":
         csvs = sorted(args.input_dir.glob("*.csv"))
         manifest = pack_kronos_dataset_meta(csvs, args.output, min_rows=args.min_rows)
         print(json.dumps({"status": "ok", "symbol_count": manifest["symbol_count"], "manifest": str(args.output)}))
         return 0
+
+    if args.cmd == "mcp":
+        return serve_kline_mcp_stdio(sys.stdin.buffer, sys.stdout.buffer)
 
     return 1
 
