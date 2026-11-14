@@ -10,6 +10,24 @@ import time
 import datetime
 import queue
 from pathlib import Path
+
+def _safe_frontmost() -> None:
+    if __import__("sys").platform == "darwin":
+        __import__("subprocess").run(
+            ["/usr/bin/osascript", "-e", f'tell application "System Events" to set frontmost of the first process whose unix id is {os.getpid()} to true'],
+            check=False, stdout=__import__("subprocess").DEVNULL, stderr=__import__("subprocess").DEVNULL,
+        )
+
+
+def _safe_reveal(path_obj, select_file: bool = False) -> None:
+    import subprocess as _sp, sys as _sys
+    p = str(Path(path_obj).resolve())
+    cmd = (["/usr/bin/open", "-R", p] if select_file else ["/usr/bin/open", p]) if _sys.platform == "darwin" else (["explorer", f"/select,{p}"] if select_file else ["explorer", p]) if _sys.platform.startswith("win") else ["xdg-open", str(Path(p).parent if select_file else Path(p))]
+    try:
+        _sp.run(cmd, check=False, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except FileNotFoundError:
+        pass
+
 import pandas as pd
 import numpy as np
 import ttkbootstrap as ttk
@@ -47,15 +65,15 @@ class PredictorMatrixGUI(ttk.Window):
         self.font_log = ("Menlo", 13)
 
         # --- Paths & State ---
-        self.root_dir = Path(__file__).resolve().parent  # 5-Kronos-Predictor-GUI
+        self.root_dir = Path(__file__).resolve().parent  # 05_predictor_gui
         self.suite_dir = self.root_dir.parent
-        self.trainer_base_dir = self.suite_dir / "4-Kronos-Trainer-Base"
+        self.trainer_base_dir = Path(os.getenv("KRONOS_HOME", str(self.suite_dir / "kronos_runtime")))
         self.models_dir = self.trainer_base_dir / "models"
         self.venv_python = self.trainer_base_dir / "venv" / "bin" / "python"
         
         self.target_csv_var = tk.StringVar(value="")
         
-        # Hyperparameters (locked to x-matrix-kronos defaults)
+        # Default inference hyperparameters
         self.lookback_var = tk.IntVar(value=90)
         self.pred_len_var = tk.IntVar(value=10)
         self.temp_var = tk.DoubleVar(value=1.0)
@@ -88,7 +106,7 @@ class PredictorMatrixGUI(ttk.Window):
         self.lift()
         self.attributes('-topmost', True)
         self.after(500, lambda: self.attributes('-topmost', False))
-        os.system('''osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is %d to true' ''' % os.getpid())
+        _safe_frontmost()
 
         # --- HEADER ---
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
@@ -148,7 +166,7 @@ class PredictorMatrixGUI(ttk.Window):
         tk.Label(out_lf.content, text="导出路经:", font=self.font_base, fg=self.c_fg, bg=self.c_bg).pack(anchor=W)
         tk.Label(out_lf.content, text=str(self.out_dir), font=("Menlo", 11), fg=self.c_gold, bg=self.c_bg, wraplength=400, justify=LEFT).pack(anchor=W, pady=(2, 10))
         
-        ttk.Button(out_lf.content, text="一键直达预测产出库", style="FlatGold.TButton", command=lambda: os.system(f'open "{self.out_dir}"')).pack(fill=X, pady=5)
+        ttk.Button(out_lf.content, text="一键直达预测产出库", style="FlatGold.TButton", command=lambda: _safe_reveal(self.out_dir, select_file=False)).pack(fill=X, pady=5)
 
         # --- RIGHT PANEL ---
         right_panel = tk.Frame(body_frame, bg=self.c_bg)
@@ -236,7 +254,7 @@ class PredictorMatrixGUI(ttk.Window):
         self.after(100, self._process_log_queue)
 
     def on_browse_csv(self):
-        init_dir = str(self.suite_dir / "2-KLine-Resample" / "gui_out_5m")
+        init_dir = str(self.suite_dir / "02_resample" / "gui_out_5m")
         f = filedialog.askopenfilename(initialdir=init_dir, filetypes=[("CSV KLine Data", "*.csv")])
         if f:
             self.target_csv_var.set(f)

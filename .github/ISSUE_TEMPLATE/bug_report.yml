@@ -1,0 +1,32 @@
+name: Bug Report
+description: Report a reproducible bug in OHLCV cleaning, resampling, slicing, or GUI workstations
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug Summary & Minimal Reproduction
+      description: Describe what happened vs. expected behavior (please do not attach proprietary/live account data).
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Pipeline Stage / Module
+      options:
+        - kline_kronos CLI / Core Engine
+        - 01_extract (1m Collector & Cleaner)
+        - 02_resample (1m -> 5m Aggregator)
+        - 03_slicer (QA & Dataset Packer)
+        - 04_trainer_gui (Kronos Fine-Tuning Console)
+        - 05_predictor_gui (Autoregressive Inference Desk)
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS & Python Version
+      placeholder: "e.g., macOS 15 / Ubuntu 24.04, Python 3.12"
+    validations:
+      required: true

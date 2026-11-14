@@ -14,6 +14,24 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from pathlib import Path
 
+def _safe_frontmost() -> None:
+    if __import__("sys").platform == "darwin":
+        __import__("subprocess").run(
+            ["/usr/bin/osascript", "-e", f'tell application "System Events" to set frontmost of the first process whose unix id is {os.getpid()} to true'],
+            check=False, stdout=__import__("subprocess").DEVNULL, stderr=__import__("subprocess").DEVNULL,
+        )
+
+
+def _safe_reveal(path_obj, select_file: bool = False) -> None:
+    import subprocess as _sp, sys as _sys
+    p = str(Path(path_obj).resolve())
+    cmd = (["/usr/bin/open", "-R", p] if select_file else ["/usr/bin/open", p]) if _sys.platform == "darwin" else (["explorer", f"/select,{p}"] if select_file else ["explorer", p]) if _sys.platform.startswith("win") else ["xdg-open", str(Path(p).parent if select_file else Path(p))]
+    try:
+        _sp.run(cmd, check=False, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except FileNotFoundError:
+        pass
+
+
 # === API Config ===
 MIANA_TOKEN = os.getenv("MIANA_TOKEN", "YOUR_API_TOKEN_HERE")  # 为了安全，请替换为您自己的 Token 或使用环境变量
 MIANA_LIST_URL = "https://miana.com.cn/api/stock/v1/stockList"
@@ -119,7 +137,7 @@ class KlineDataFetcherGUI(ttk.Window):
         
         # Cross-directory absolute path resolution
         base_path = Path(__file__).resolve().parent.parent
-        self.out_dir = base_path / "1-KLine-Extract" / "gui_downloads"
+        self.out_dir = base_path / "01_extract" / "gui_downloads"
         self.out_dir.mkdir(parents=True, exist_ok=True)
         
         # 观察池队列 (Market Radar Pool)
@@ -140,7 +158,7 @@ class KlineDataFetcherGUI(ttk.Window):
         self.lift()
         self.attributes('-topmost', True)
         self.after(1000, lambda: self.attributes('-topmost', False))
-        os.system('''osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is %d to true' ''' % os.getpid())
+        _safe_frontmost()
         
         # --- HEADER ---
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
@@ -416,7 +434,7 @@ class KlineDataFetcherGUI(ttk.Window):
         else:
             try:
                 text = self.clipboard_get()
-            except:
+            except Exception:
                 messagebox.showwarning("剪贴板空", "未能在系统剪贴板中检测到可读的文本数据。")
                 return
             
@@ -607,7 +625,7 @@ class KlineDataFetcherGUI(ttk.Window):
             
             if col == '#6': # open
                 if filepath.exists():
-                    os.system(f"open -R '{filepath.absolute()}'")
+                    _safe_reveal(filepath, select_file=True)
             elif col == '#7': # delete
                 if messagebox.askyesno("清理确认", f"确定在本地磁盘彻底销毁以下资产吗？\n\n{filename}"):
                     try:
@@ -830,7 +848,8 @@ class KlineDataFetcherGUI(ttk.Window):
                 if len(r.json().get("data", [])) > 0:
                     self.after(0, lambda y=year: self.log_msg(f"[+] 成功下探到数据根偏移起点所在年份: {y} 年。"))
                     return pd.to_datetime(f"{year}-01-01 00:00:00")
-            except: pass
+            except Exception:
+                pass
         return fallback_start_dt
 
     def _fetch_kline_single(self, stock_name, symbol, start_str, end_str):

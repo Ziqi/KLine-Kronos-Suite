@@ -1,0 +1,19 @@
+name: Feature Request
+description: Propose a new market calendar, exchange adapter, or model workflow enhancement
+title: "[Feat]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use Case & Motivation
+      description: What quantitative data or model workflow problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Design
+      description: Outline expected CLI flags, CSV schema, or UI controls.
+    validations:
+      required: true

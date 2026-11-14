@@ -1,0 +1,9 @@
+version = 1
+SPDX-PackageName = "kline-kronos-suite"
+SPDX-PackageDownloadLocation = "https://github.com/Ziqi/KLine-Kronos-Suite"
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Ziqi and KLine-Kronos-Suite Contributors"
+SPDX-License-Identifier = "MIT"

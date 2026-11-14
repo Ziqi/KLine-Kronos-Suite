@@ -1,87 +1,99 @@
-# KLine Kronos Suite
+# KLine Kronos Suite (`v1.0.0`)
 
+[![CI & Coverage Gate](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml)
+[![CodeQL SAST](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Ziqi/KLine-Kronos-Suite/badge)](https://scorecard.dev/viewer/?uri=github.com/Ziqi/KLine-Kronos-Suite)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/attestations)
+[![REUSE Compliant](https://img.shields.io/badge/REUSE-3.3%20compliant-brightgreen)](./REUSE.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C.svg)](https://pytorch.org/)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
 
-**End-to-end intraday OHLCV acquisition, multi-timeframe resampling, tensor slicing, fine-tuning orchestration, and autoregressive inference workstation for financial time-series foundation models (Kronos).**
+> **English** | **[简体中文 (`README.zh-CN.md`)](./README.zh-CN.md)**
+
+**Deterministic intraday OHLCV cleaning, session-aligned `1m -> 5m` resampling, QA auditing, two-stage fine-tuning supervision, and trading-calendar-aware inference workstation for financial time-series foundation models ([Kronos](https://github.com/shiyu-coder/Kronos)).**
 
 ---
 
-## Overview
+## Why KLine Kronos Suite?
 
-Training and evaluating financial foundation models such as **Kronos** on high-frequency market data typically breaks down across disconnected scripts: raw 1-minute bar collection, session-aligned timeframe aggregation, NaN/continuity auditing, sliding-window tensor serialization, isolated GPU training supervision, and visual out-of-sample rollouts.
+Feeding high-frequency equity bars into financial foundation models such as **Kronos** often breaks silently due to messy market microstructure details:
+- **Call-auction & lunch-break artifacts** (`13:00:00` boundary ticks, `15:01–15:31` post-close ticks, or missing `15:00:00` closing bars);
+- **Interval-label leakage** when resampling 1-minute bars to 5-minute bars without strict `closed='right', label='right'` alignment (`09:31..09:35 -> 09:35`);
+- **Silent NaNs or non-monotonic timestamps** corrupting sliding-window Tokenizer/Predictor batches;
+- **Calendar drift during multi-step rollouts** (naively adding `+5 minutes` across the `11:30–13:00` lunch break, overnight close, or weekends).
 
-**KLine Kronos Suite** unifies all five stages into a cohesive, modular desktop & CLI pipeline (`ttkbootstrap` dark-gold workstation UI + standalone Python engines):
+**KLine Kronos Suite** solves these end-to-end with **two complementary interfaces**:
+1. **Zero-Dependency Deterministic Core & CLI (`kline_kronos/`)** — Pure Python 3.10+ standard library engine for instant headless CSV cleaning, `1m -> 5m` resampling, QA auditing, SHA-256 dataset manifests, and z-score window scaling (`>90%` statement coverage, zero `pip install` needed).
+2. **Five-Stage Desktop Workstation (`01_extract/` – `05_predictor_gui/`)** — Modular `ttkbootstrap` GUI apps + PyTorch process supervisors for interactive data operations, fine-tuning monitoring, and candlestick rollout inspection.
 
 ```mermaid
 flowchart LR
-    S1["01_extract<br/>1m OHLCV Collector<br/>& Continuity Cleaner"] --> S2["02_resample<br/>Session-Aligned<br/>1m -> 5m Aggregator"]
-    S2 --> S3["03_slicer<br/>Sliding-Window Tensor<br/>Builder & QA Inspector"]
+    S1["01_extract<br/>1m OHLCV Acquisition<br/>& Session Cleaner"] --> S2["02_resample<br/>Right-Closed<br/>1m -> 5m Aggregator"]
+    S2 --> S3["03_slicer<br/>QA Inspector &<br/>Dataset Packer"]
     S3 --> S4["04_trainer_gui<br/>Two-Stage Tokenizer &<br/>Predictor Supervisor"]
-    S4 --> S5["05_predictor_gui<br/>Autoregressive Rollout<br/>& Candlestick Canvas"]
+    S4 --> S5["05_predictor_gui<br/>Calendar-Aligned Rollout<br/>& Candlestick Desk"]
 ```
 
 ---
 
-## Architecture & Five-Stage Modules
+## 30-Second Zero-Dependency CLI Quickstart
 
-| Directory | Stage | Core Scripts | Key Capabilities |
-| :--- | :--- | :--- | :--- |
-| [`01_extract/`](./01_extract/) | **1. High-Frequency Acquisition** | `gui_fetch_kline.py`<br/>`miana_1m_clean_save.py`<br/>`resample_1m_to_5m.py` | Batch 1-minute OHLCV retrieval, timestamp deduplication, trading-session continuity checks, and clean CSV persistence. |
-| [`02_resample/`](./02_resample/) | **2. Multi-Timeframe Aggregation** | `gui_resample_5m.py` | Deterministic 1-minute to 5-minute bar aggregation (`open/high/low/close/volume/amount`) preserving market session boundaries. |
-| [`03_slicer/`](./03_slicer/) | **3. Tensor Slicing & QA** | `gui_slicer.py` | Converts 5-minute CSV series into normalized sliding-window PyTorch/Pickle tensor datasets with missing-value and outlier gates. |
-| [`04_trainer_gui/`](./04_trainer_gui/) | **4. Two-Stage Fine-Tuning Console** | `gui_trainer.py` | Isolated `venv` process supervisor for Kronos Tokenizer & Predictor fine-tuning (Cosine Annealing LR, Early Stopping, live loss stream, safe process termination). |
-| [`05_predictor_gui/`](./05_predictor_gui/) | **5. Autoregressive Inference Desk** | `gui_predictor.py`<br/>`run_predictor_inference.py` | Loads fine-tuned Tokenizer + Predictor checkpoints, runs cross-sectional feature alignment & autoregressive forecasting, and renders interactive candlestick trajectories. |
-
----
-
-## Quickstart
+Run the full cleaning, `1m -> 5m` resampling, QA audit, and SHA-256 manifest pipeline immediately on Python 3.10+ using the bundled synthetic fixture (`examples/sample_1m_ohlcv.csv`):
 
 ```bash
 git clone https://github.com/Ziqi/KLine-Kronos-Suite.git
 cd KLine-Kronos-Suite
+
+# 1. Clean raw 1-minute bars & ensure 15:00 session close bar
+python3 -m kline_kronos clean ./examples/sample_1m_ohlcv.csv --output /tmp/sample_1m_clean.csv
+
+# 2. Resample 1m -> 5m (closed='right', label='right')
+python3 -m kline_kronos resample /tmp/sample_1m_clean.csv --out-dir /tmp/out_5m
+
+# 3. Audit OHLCVA bounds & timestamp monotonicity
+python3 -m kline_kronos audit /tmp/out_5m/sample_5m_clean.csv --min-rows 2
+
+# 4. Emit deterministic SHA-256 dataset manifest
+python3 -m kline_kronos manifest /tmp/out_5m --output /tmp/dataset_manifest.json --min-rows 2
+```
+
+---
+
+## Five-Stage Workstation Architecture
+
+| Module | Role | Entrypoints | Highlights |
+| :--- | :--- | :--- | :--- |
+| **[`kline_kronos/`](./kline_kronos/)** | **Deterministic Core & CLI** | `python3 -m kline_kronos` | Pure Python 3.10+ stdlib engine: `clean`, `resample`, `audit`, `manifest`, z-score window scaling, and A-share session calendar stepper. |
+| **[`01_extract/`](./01_extract/)** | **1. 1m Collector & Cleaner** | `gui_fetch_kline.py`<br/>`miana_1m_clean_save.py`<br/>`resample_1m_to_5m.py` | Multi-threaded incremental 1m bar retrieval (`MIANA_TOKEN`), auction-noise filtering, and `15:00` bar synthesis. |
+| **[`02_resample/`](./02_resample/)** | **2. `1m -> 5m` Aggregator** | `gui_resample_5m.py` | Right-closed 5-minute OHLCVA aggregation (`pandas` 2.x & 3.x `'5min'` compatible) with date-range filtering. |
+| **[`03_slicer/`](./03_slicer/)** | **3. QA & Dataset Packer** | `gui_slicer.py` | Batch NaN / missing-column / length audit and Kronos `.pkl` dictionary export. |
+| **[`04_trainer_gui/`](./04_trainer_gui/)** | **4. Fine-Tuning Console** | `gui_trainer.py` | Isolated `venv` process supervisor for Kronos Tokenizer & Predictor fine-tuning (`KRONOS_HOME`), live loss stream, and safe process termination. |
+| **[`05_predictor_gui/`](./05_predictor_gui/)** | **5. Inference & Chart Desk** | `gui_predictor.py`<br/>`run_predictor_inference.py` | Cross-sectional z-score scaling (`clip[-5, 5]`), session-aware timestamp stepping, inverse scaling, and candlestick trajectory plotting. |
+
+---
+
+## Desktop Workstation Installation (Optional)
+
+To launch the `ttkbootstrap` GUI workstations and PyTorch inference scripts:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e .
+
+# Launch any stage workstation:
+python3 ./02_resample/gui_resample_5m.py
 ```
-
-### Run Any Stage Independently
-
-```bash
-# Stage 1: 1-minute K-line collector GUI (or CLI cleaner)
-python3 01_extract/gui_fetch_kline.py
-
-# Stage 2: 1m -> 5m resampling studio (testable immediately with examples/sample_1m_ohlcv.csv)
-python3 02_resample/gui_resample_5m.py
-
-# Stage 3: Sliding-window tensor slicer & dataset QA
-python3 03_slicer/gui_slicer.py
-
-# Stage 4: Two-stage Kronos fine-tuning process supervisor
-python3 04_trainer_gui/gui_trainer.py
-
-# Stage 5: Autoregressive trajectory inference & candlestick viewer
-python3 05_predictor_gui/gui_predictor.py
-```
-
-A lightweight synthetic dataset ([`examples/sample_1m_ohlcv.csv`](./examples/sample_1m_ohlcv.csv)) is bundled so you can verify resampling and tensor-slicing stages offline without configuring market data feeds.
 
 ---
 
-## 中文架构说明（Chinese Overview）
+## Testing, Supply-Chain Security & Provenance
 
-**KLine Kronos Suite** 是一套面向 **Kronos** 等金融时序基础模型的端到端分钟级数据处理、微调监控与自回归推演桌面套件，将散乱的数据工程收敛为五个标准阶段：
-
-1. **[`01_extract/`](./01_extract/)（1 分钟高频抓取与清洗基站）**：支持批量拉取 1 分钟级 OHLCV 行情、时间戳去重排序与断点连续性校验。
-2. **[`02_resample/`](./02_resample/)（1m $\rightarrow$ 5m 降维重采样工作室）**：严格按交易时段边界将 1 分钟颗粒度数据聚合为标准 5 分钟级 K 线序列（可使用 [`examples/sample_1m_ohlcv.csv`](./examples/sample_1m_ohlcv.csv) 离线验证）。
-3. **[`03_slicer/`](./03_slicer/)（深度学习张量切片与质检器）**：将多周期 CSV 转换为时序 Transformer / Kronos 可直接读取的滑动窗口张量包，内置异常值与缺失值质检。
-4. **[`04_trainer_gui/`](./04_trainer_gui/)（两阶段微调流式控制台）**：在独立虚拟环境中托管 Tokenizer 与 Predictor 训练生命周期，实时流式捕获 Epoch / Loss 曲线，内置余弦退火（Cosine Annealing）与早停（Early Stopping）参数管理及安全中断保护。
-5. **[`05_predictor_gui/`](./05_predictor_gui/)（自回归推演与原生 K 线画布终端）**：挂载本地微调权重，自动完成字段对齐与截面归一化，执行未来步长自回归生成并在原生 Canvas 中对比可视化。
-
----
+- **Automated Coverage & Static Security Gate:** `python3 ./tests/test_pipeline_core.py --min-coverage 85` verifies end-to-end CLI/core behavior, trading-calendar edge cases, `>=85%` statement coverage, and AST invariants (zero `os.system`, zero bare `except:`).
+- **Cryptographic Provenance:** Every release publishes Sigstore-backed **SLSA Build Level 3** provenance and **SPDX-2.3** SBOM attestations verifiable via [`/attestations`](https://github.com/Ziqi/KLine-Kronos-Suite/attestations) or `gh attestation verify`.
+- **Security Policy:** See [`SECURITY.md`](./SECURITY.md) for private vulnerability reporting and `.pkl` checkpoint trust-boundary guidelines.
 
 ## Acknowledgements & License
 
-- Designed as a community data-engineering and workstation companion for financial time-series foundation models including [Kronos](https://github.com/shiyu-coder/Kronos).
-- Released under the [MIT License](./LICENSE). For quantitative research and engineering validation only; nothing in this repository constitutes investment advice.
+Built for seamless integration with the **Kronos** financial foundation model ecosystem ([`shiyu-coder/Kronos`](https://github.com/shiyu-coder/Kronos)). Released under the [MIT License](./LICENSE).

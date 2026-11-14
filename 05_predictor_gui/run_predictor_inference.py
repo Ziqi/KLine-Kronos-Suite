@@ -19,7 +19,7 @@ import sys
 warnings.filterwarnings("ignore")
 
 # Add Trainer Base to path so we can import model architecture
-trainer_base_path = Path(__file__).resolve().parent.parent / "4-Kronos-Trainer-Base"
+trainer_base_path = Path(os.getenv("KRONOS_HOME", str(Path(__file__).resolve().parent.parent / "kronos_runtime")))
 sys.path.append(str(trainer_base_path))
 
 try:

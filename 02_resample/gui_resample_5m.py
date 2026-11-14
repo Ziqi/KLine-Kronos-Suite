@@ -12,6 +12,24 @@ from tkinter import messagebox, filedialog
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from pathlib import Path
+
+def _safe_frontmost() -> None:
+    if __import__("sys").platform == "darwin":
+        __import__("subprocess").run(
+            ["/usr/bin/osascript", "-e", f'tell application "System Events" to set frontmost of the first process whose unix id is {os.getpid()} to true'],
+            check=False, stdout=__import__("subprocess").DEVNULL, stderr=__import__("subprocess").DEVNULL,
+        )
+
+
+def _safe_reveal(path_obj, select_file: bool = False) -> None:
+    import subprocess as _sp, sys as _sys
+    p = str(Path(path_obj).resolve())
+    cmd = (["/usr/bin/open", "-R", p] if select_file else ["/usr/bin/open", p]) if _sys.platform == "darwin" else (["explorer", f"/select,{p}"] if select_file else ["explorer", p]) if _sys.platform.startswith("win") else ["xdg-open", str(Path(p).parent if select_file else Path(p))]
+    try:
+        _sp.run(cmd, check=False, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except FileNotFoundError:
+        pass
+
 from concurrent.futures import ProcessPoolExecutor
 
 # ================= Engine Node =================
@@ -40,7 +58,7 @@ def process_single_file(input_file, out_dir, start_dt, end_dt):
         }
         
         # a-share standard logic
-        df_5m = df.resample('5T', closed='right', label='right').agg(agg_dict)
+        df_5m = df.resample('5min', closed='right', label='right').agg(agg_dict)
         df_5m.dropna(subset=['open'], inplace=True)
         
         df_5m.reset_index(inplace=True)
@@ -122,8 +140,8 @@ class ResampleMatrixGUI(ttk.Window):
         
         # Cross-directory absolute path resolution
         base_path = Path(__file__).resolve().parent.parent
-        self.source_dir = base_path / "1-KLine-Extract" / "gui_downloads"
-        self.target_dir = base_path / "2-KLine-Resample" / "gui_out_5m"
+        self.source_dir = base_path / "01_extract" / "gui_downloads"
+        self.target_dir = base_path / "02_resample" / "gui_out_5m"
         self.target_dir.mkdir(parents=True, exist_ok=True)
         
         # Runtime tracking
@@ -165,7 +183,7 @@ class ResampleMatrixGUI(ttk.Window):
         self.lift()
         self.attributes('-topmost', True)
         self.after(1000, lambda: self.attributes('-topmost', False))
-        os.system('''osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is %d to true' ''' % os.getpid())
+        _safe_frontmost()
         
         # --- HEADER ---
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
@@ -475,7 +493,7 @@ class ResampleMatrixGUI(ttk.Window):
             
             if col == '#6': # open locator
                 if os.path.exists(filepath):
-                    os.system(f"open -R '{os.path.abspath(filepath)}'")
+                    _safe_reveal(filepath, select_file=True)
             elif col == '#7': # delete
                 if messagebox.askyesno("清理确认", f"确定在本地磁盘彻底销毁以下资产吗？\n\n{filename}"):
                     try:

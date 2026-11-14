@@ -12,3 +12,9 @@ data/
 outputs/
 *.csv
 !examples/*.csv
+
+build/
+dist/
+artifacts/
+*.egg-info/
+kronos_runtime/

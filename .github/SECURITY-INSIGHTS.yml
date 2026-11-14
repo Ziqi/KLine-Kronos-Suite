@@ -1,0 +1,34 @@
+header:
+  schema-version: '2.0.0'
+  last-updated: '2026-11-14T00:00:00.000Z'
+  last-reviewed: '2026-11-14T00:00:00.000Z'
+  url: https://github.com/Ziqi/KLine-Kronos-Suite
+project:
+  name: KLine-Kronos-Suite
+  administrators:
+    - name: Ziqi
+      primary: true
+  repositories:
+    - name: KLine-Kronos-Suite
+      url: https://github.com/Ziqi/KLine-Kronos-Suite
+      comment: Core repository and CI/SLSA workflows
+  vulnerability-reporting:
+    reports-accepted: true
+    bug-bounty-available: false
+    url: https://github.com/Ziqi/KLine-Kronos-Suite/security/advisories/new
+    comment: Report vulnerabilities privately via GitHub Security Advisories
+repository:
+  url: https://github.com/Ziqi/KLine-Kronos-Suite
+  status: active
+  accepts-change-request: true
+  accepts-automated-change-request: true
+  core-team:
+    - name: Ziqi
+      primary: true
+  license:
+    url: https://github.com/Ziqi/KLine-Kronos-Suite/blob/main/LICENSE
+    expression: MIT
+  security:
+    assessments:
+      self:
+        comment: Enforced via AST static checks, CodeQL SAST, OpenSSF Scorecard, and SLSA L3 attestations.

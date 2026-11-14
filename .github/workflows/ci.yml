@@ -1,0 +1,43 @@
+name: KLine Kronos CI & Coverage Gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  verify:
+    name: REUSE License Audit, AST Security Gate & >=85% Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: FSFE REUSE 3.3 Licensing & Copyright Audit
+        if: matrix.python-version == '3.12'
+        uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5 # v6.0.0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run unit, adversarial, AST security & >=85% statement coverage gate
+        run: python3 ./tests/test_pipeline_core.py --min-coverage 85
+
+      - name: Run CLI end-to-end smoke test & deterministic SPDX-2.3 SBOM check
+        run: |
+          python3 -m kline_kronos resample ./examples/sample_1m_ohlcv.csv --out-dir /tmp/kline_ci_5m
+          python3 -m kline_kronos audit /tmp/kline_ci_5m/sample_5m_ohlcv.csv --min-rows 2
+          python3 ./scripts/generate_spdx_sbom.py --version ci-check --output /tmp/kline-kronos-suite.spdx.json

@@ -48,9 +48,9 @@ def resample_single_file(input_file: str, output_dir: str):
         }
 
         # Perform the 5-minute resampling
-        # '5T' means 5 minutes. 'closed='right', label='right'' is often standard in finance,
+        # '5min' means 5 minutes (pandas 2.2+/3.0 compatible). 'closed='right', label='right'' is often standard in finance,
         # but for A-shares, typically a 5-min bar starting at 09:30 and ending at 09:35 is labeled 09:35.
-        df_5m = df.resample('5T', closed='right', label='right').agg(agg_dict)
+        df_5m = df.resample('5min', closed='right', label='right').agg(agg_dict)
 
         # Drop rows where there was no trading (NaN in 'open')
         df_5m.dropna(subset=['open'], inplace=True)

@@ -10,6 +10,24 @@ import time
 import datetime
 import queue
 from pathlib import Path
+
+def _safe_frontmost() -> None:
+    if __import__("sys").platform == "darwin":
+        __import__("subprocess").run(
+            ["/usr/bin/osascript", "-e", f'tell application "System Events" to set frontmost of the first process whose unix id is {os.getpid()} to true'],
+            check=False, stdout=__import__("subprocess").DEVNULL, stderr=__import__("subprocess").DEVNULL,
+        )
+
+
+def _safe_reveal(path_obj, select_file: bool = False) -> None:
+    import subprocess as _sp, sys as _sys
+    p = str(Path(path_obj).resolve())
+    cmd = (["/usr/bin/open", "-R", p] if select_file else ["/usr/bin/open", p]) if _sys.platform == "darwin" else (["explorer", f"/select,{p}"] if select_file else ["explorer", p]) if _sys.platform.startswith("win") else ["xdg-open", str(Path(p).parent if select_file else Path(p))]
+    try:
+        _sp.run(cmd, check=False, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except FileNotFoundError:
+        pass
+
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
@@ -45,12 +63,12 @@ class TrainerMatrixGUI(ttk.Window):
         self.font_log = ("Menlo", 13)
 
         # --- Paths & State ---
-        self.root_dir = Path(__file__).resolve().parent  # 4-Kronos-Trainer-GUI
+        self.root_dir = Path(__file__).resolve().parent  # 04_trainer_gui
         self.suite_dir = self.root_dir.parent
-        self.trainer_base_dir = self.suite_dir / "4-Kronos-Trainer-Base"
+        self.trainer_base_dir = Path(os.getenv("KRONOS_HOME", str(self.suite_dir / "kronos_runtime")))
         self.venv_python = self.trainer_base_dir / "venv" / "bin" / "python"
         
-        self.data_var = tk.StringVar(value=str(self.suite_dir / "3-KLine-Slicer" / "gui_out_slices"))
+        self.data_var = tk.StringVar(value=str(self.suite_dir / "03_slicer" / "gui_out_slices"))
         self.target_pkl_var = tk.StringVar(value="")
         self.mode_var = tk.StringVar(value="tokenizer") # 'tokenizer' or 'predictor'
         
@@ -81,7 +99,7 @@ class TrainerMatrixGUI(ttk.Window):
         self.lift()
         self.attributes('-topmost', True)
         self.after(500, lambda: self.attributes('-topmost', False))
-        os.system('''osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is %d to true' ''' % os.getpid())
+        _safe_frontmost()
 
         # --- HEADER ---
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
@@ -134,7 +152,7 @@ class TrainerMatrixGUI(ttk.Window):
         tk.Label(out_lf.content, text="模型保存路径:", font=self.font_base, fg=self.c_fg, bg=self.c_bg).pack(anchor=W)
         tk.Label(out_lf.content, text=str(self.trainer_base_dir / "models"), font=("Menlo", 12), fg=self.c_gold, bg=self.c_bg, wraplength=400, justify=LEFT).pack(anchor=W, pady=(2, 10))
         
-        ttk.Button(out_lf.content, text="一键直达模型目录", style="FlatGold.TButton", command=lambda: os.system(f'open "{self.trainer_base_dir / "models"}"')).pack(fill=X, pady=5)
+        ttk.Button(out_lf.content, text="一键直达模型目录", style="FlatGold.TButton", command=lambda: _safe_reveal(self.trainer_base_dir / "models", select_file=False)).pack(fill=X, pady=5)
 
         # --- RIGHT PANEL ---
         right_panel = tk.Frame(body_frame, bg=self.c_bg)
@@ -189,7 +207,7 @@ class TrainerMatrixGUI(ttk.Window):
 
     def on_browse_pkl(self):
         # Ensure we pass a clear, absolute string path for macOS finder
-        init_dir = str(self.suite_dir / "3-KLine-Slicer" / "gui_out_slices")
+        init_dir = str(self.suite_dir / "03_slicer" / "gui_out_slices")
         f = filedialog.askopenfilename(initialdir=init_dir, filetypes=[("Pickle Dict", "*.pkl")])
         if f:
             self.target_pkl_var.set(f)

@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use KLine Kronos Suite in quantitative research or financial time-series engineering, please cite it using this metadata."
+title: "KLine Kronos Suite: Deterministic Intraday OHLCV Cleaning, Session-Aligned Resampling, and Fine-Tuning Workstation for Financial Foundation Models"
+type: software
+authors:
+  - alias: "Ziqi"
+    name: "Ziqi"
+repository-code: "https://github.com/Ziqi/KLine-Kronos-Suite"
+url: "https://github.com/Ziqi/KLine-Kronos-Suite"
+license: MIT
+version: "1.0.0"
+date-released: "2026-11-14"
+keywords:
+  - quantitative-finance
+  - ohlcv
+  - kronos
+  - time-series
+  - resampling
+  - pytorch

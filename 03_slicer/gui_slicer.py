@@ -13,6 +13,24 @@ import datetime
 import glob
 import re
 from pathlib import Path
+
+def _safe_frontmost() -> None:
+    if __import__("sys").platform == "darwin":
+        __import__("subprocess").run(
+            ["/usr/bin/osascript", "-e", f'tell application "System Events" to set frontmost of the first process whose unix id is {os.getpid()} to true'],
+            check=False, stdout=__import__("subprocess").DEVNULL, stderr=__import__("subprocess").DEVNULL,
+        )
+
+
+def _safe_reveal(path_obj, select_file: bool = False) -> None:
+    import subprocess as _sp, sys as _sys
+    p = str(Path(path_obj).resolve())
+    cmd = (["/usr/bin/open", "-R", p] if select_file else ["/usr/bin/open", p]) if _sys.platform == "darwin" else (["explorer", f"/select,{p}"] if select_file else ["explorer", p]) if _sys.platform.startswith("win") else ["xdg-open", str(Path(p).parent if select_file else Path(p))]
+    try:
+        _sp.run(cmd, check=False, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except FileNotFoundError:
+        pass
+
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
@@ -51,7 +69,7 @@ class SlicerMatrixGUI(ttk.Window):
         
         # --- Paths & State ---
         self.root_dir = Path(__file__).resolve().parent
-        self.src_dir = self.root_dir.parent / "2-KLine-Resample" / "gui_out_5m"
+        self.src_dir = self.root_dir.parent / "02_resample" / "gui_out_5m"
         self.out_dir = self.root_dir / "gui_out_slices"
         
         if not self.out_dir.exists(): self.out_dir.mkdir(parents=True)
@@ -97,7 +115,7 @@ class SlicerMatrixGUI(ttk.Window):
         self.lift()
         self.attributes('-topmost', True)
         self.after(500, lambda: self.attributes('-topmost', False))
-        os.system('''osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is %d to true' ''' % os.getpid())
+        _safe_frontmost()
 
         # --- HEADER ---
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
@@ -331,8 +349,8 @@ class SlicerMatrixGUI(ttk.Window):
                 os.remove(Path(self.src_var.get()) / filename)
                 self.tree.delete(iid)
                 success_count += 1
-            except: pass
-        
+            except Exception:
+                pass
         self.log_msg(f"[!] 批量粉碎任务完成: 成功清理 {success_count} 个物理标的。", "warn")
 
     def on_tgt_tree_click(self, event):
@@ -362,7 +380,7 @@ class SlicerMatrixGUI(ttk.Window):
         
         try:
             # On macOS, use 'open' to reveal the folder
-            os.system(f'open "{self.out_dir}"')
+            _safe_reveal(self.out_dir, select_file=False)
             self.log_msg(f"[*] 已打开目标输出目录: {self.out_dir}", "info")
         except Exception as e:
             self.log_msg(f"[-] 无法打开目录: {e}", "err")
@@ -392,7 +410,7 @@ class SlicerMatrixGUI(ttk.Window):
                     status = "[x] 数据过短"
                 
                 self.after(0, lambda i=iid, s=status: self.tree.item(i, values=(self.tree.item(i)['values'][0], self.tree.item(i)['values'][1], self.tree.item(i)['values'][2], s, "[ 删除 ]")))
-            except:
+            except Exception:
                 self.after(0, lambda i=iid: self.tree.item(i, values=(self.tree.item(i)['values'][0], self.tree.item(i)['values'][1], self.tree.item(i)['values'][2], "[x] 毁损", "[ 删除 ]")))
         self.log_msg("[+] 完整性复查完毕，请根据状态剔除异常标的。", "succ")
 

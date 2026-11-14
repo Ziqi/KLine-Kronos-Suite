@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kline-kronos-suite"
+version = "1.0.0"
+description = "Deterministic intraday OHLCV cleaning, session-aligned 1m->5m resampling, QA slicing, and desktop/CLI workstation for Kronos financial foundation models."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "Ziqi"}]
+keywords = ["kronos", "ohlcv", "quantitative-finance", "time-series", "ohlc", "resampling", "pytorch"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+workstation = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "requests>=2.31",
+    "ttkbootstrap>=1.10",
+    "torch>=2.0",
+]
+
+[project.scripts]
+kline-kronos = "kline_kronos.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Ziqi/KLine-Kronos-Suite"
+Repository = "https://github.com/Ziqi/KLine-Kronos-Suite"
+Issues = "https://github.com/Ziqi/KLine-Kronos-Suite/issues"
+Discussions = "https://github.com/Ziqi/KLine-Kronos-Suite/discussions"
+
+[tool.setuptools.packages.find]
+include = ["kline_kronos*"]

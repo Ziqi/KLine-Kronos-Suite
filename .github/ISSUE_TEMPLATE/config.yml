@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions (Questions, Architecture & Show-and-Tell)
+    url: https://github.com/Ziqi/KLine-Kronos-Suite/discussions
+    about: Ask usage questions or share custom Kronos fine-tuning setups in Discussions.
+  - name: Report a Security Vulnerability Privately
+    url: https://github.com/Ziqi/KLine-Kronos-Suite/security/advisories/new
+    about: Submit security issues confidentially via GitHub Security Advisories.
