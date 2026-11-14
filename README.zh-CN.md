@@ -104,8 +104,11 @@ python3 ./02_resample/gui_resample_5m.py
 ## 供应链安全、可重现构建与开源协议
 
 [![CI & Coverage Gate](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml)
+[![OSPS Baseline L3](https://img.shields.io/badge/OpenSSF%20OSPS-Baseline%20L3-007ec6.svg)](./SECURITY.md)
 [![CodeQL SAST](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml)
 [![REUSE Compliant](https://img.shields.io/badge/REUSE-3.3%20compliant-brightgreen)](./REUSE.toml)
+[![Homebrew Tap](https://img.shields.io/badge/Homebrew-Ziqi%2Ftap-FBB040.svg?logo=homebrew&logoColor=white)](https://github.com/Ziqi/homebrew-tap)
+[![SWHID](https://img.shields.io/badge/SWHID-swh%3A1%3Asnp%3A9760a7bf-e20026.svg)](https://archive.softwareheritage.org/swh:1:snp:9760a7bf05ad7883e9f07d4b4dd47d118f9a68e0)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
 
 - **自动化质量门禁**：执行 `python3 ./tests/test_pipeline_core.py --min-coverage 85 && python3 ./tests/fuzz_kline_pipeline.py --iterations 2000` 验证单元测试、2,000 轮模糊测试、AST 安全扫描以及 `kline_kronos` 核心算法与 CLI 语句覆盖率（实测 `91.15%`，不含桌面 GUI 模块）。

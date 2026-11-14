@@ -109,8 +109,11 @@ python3 ./02_resample/gui_resample_5m.py
 ## Testing, Supply-Chain Security & Reproducible Builds
 
 [![CI & Coverage Gate](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/ci.yml)
+[![OSPS Baseline L3](https://img.shields.io/badge/OpenSSF%20OSPS-Baseline%20L3-007ec6.svg)](./SECURITY.md)
 [![CodeQL SAST](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ziqi/KLine-Kronos-Suite/actions/workflows/codeql.yml)
 [![REUSE Compliant](https://img.shields.io/badge/REUSE-3.3%20compliant-brightgreen)](./REUSE.toml)
+[![Homebrew Tap](https://img.shields.io/badge/Homebrew-Ziqi%2Ftap-FBB040.svg?logo=homebrew&logoColor=white)](https://github.com/Ziqi/homebrew-tap)
+[![SWHID](https://img.shields.io/badge/SWHID-swh%3A1%3Asnp%3A9760a7bf-e20026.svg)](https://archive.softwareheritage.org/swh:1:snp:9760a7bf05ad7883e9f07d4b4dd47d118f9a68e0)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
 
 - **Automated Coverage, Fuzzing & AST Security Gate:** `python3 ./tests/test_pipeline_core.py --min-coverage 85 && python3 ./tests/fuzz_kline_pipeline.py --iterations 2000` verifies end-to-end CLI/core behavior, trading-calendar edge cases, `>=85%` `kline_kronos` core CLI/pipeline statement coverage (`91.15%` actual; desktop GUI stages excluded), and AST invariants (zero `os.system`, zero bare `except:`).
